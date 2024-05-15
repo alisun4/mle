@@ -28,7 +28,7 @@ def perplexity(features, probs):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--feature', '-f', type=str, default='unigram',
-                        choices=['unigram', 'bigram', 'customized'])
+                        choices=['unigram', 'bigram', 'trigram'])
     args = parser.parse_args()
     if args.feature == "unigram":
         feat_extractor = UnigramFeature()

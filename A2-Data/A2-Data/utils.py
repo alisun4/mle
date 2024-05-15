@@ -117,12 +117,15 @@ class BigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
     """
     def __init__(self):
-        self.unigram = defaultdict(self.two)
+        self.unigram = {}
         
     def zero(self):
         return 0
     
-    def two(self):
+    def index(self, token):
+        if token in self.unigram:
+            return self.unigram[token]
+        
         return 2
         
     def fit(self, text_set: list):
@@ -155,10 +158,10 @@ class BigramFeature(FeatureExtractor):
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
         feature = np.zeros((len(self.unigram), len(self.unigram)))
-        feature[self.unigram[0]][self.unigram[text[0]]] += 1
+        feature[0][self.unigram[text[0]]] += 1
         for i in range(0, len(text)-1):
-            feature[self.unigram[text[i].lower()]][text[i+1].lower()] += 1
-        feature[self.unigram[text[-1].lower()]][self.unigram[1]] += 1
+            feature[self.index(text[i].lower())][self.index(text[i+1].lower())] += 1
+        feature[self.index(text[-1].lower())][1] += 1
         
         return feature
     
