@@ -1,6 +1,7 @@
 from nltk.tokenize import regexp_tokenize
 import numpy as np
 from collections import defaultdict
+from tqdm import tqdm
 
 default_pattern =  r"""(?x)                  
                         (?:[A-Z]\.)+          
@@ -158,7 +159,7 @@ class BigramFeature(FeatureExtractor):
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
         feature = np.zeros((len(self.unigram), len(self.unigram)))
-        feature[0][self.unigram[text[0]]] += 1
+        feature[0][self.index(text[0])] += 1
         for i in range(0, len(text)-1):
             feature[self.index(text[i].lower())][self.index(text[i+1].lower())] += 1
         feature[self.index(text[-1].lower())][1] += 1

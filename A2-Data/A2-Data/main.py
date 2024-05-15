@@ -1,20 +1,17 @@
 from utils import *
 import numpy as np
 import argparse
+from tqdm import tqdm
 
 def get_features(filename, feat_extractor):
     f = open(filename)
     text_set = f.readlines()
     f.close()
-    
     features = []
     i = 0
-    for text in text_set:
+    for text in tqdm(text_set):
         feature_vect = feat_extractor.transform(tokenize(text))
-        if len(feature_vect) > 23729:
-            print(f"New words added on example {i}.")
-            print(len(feature_vect))
-            return np.array(features)
+        # print(len(feature_vect))
         features.append(feature_vect)
         i += 1
     
@@ -46,11 +43,11 @@ def main():
     
     feat_extractor.fit(training_data)
     
-    # print(len(feat_extractor.unigram))
+    print(len(feat_extractor.unigram))
 
     train_features = get_features("1b_benchmark.train.tokens", feat_extractor)
     
-    # print(train_features.shape)
+    print(train_features.shape)
     
     train_log_probs = feat_extractor.token_log_probs(train_features)
     
