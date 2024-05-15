@@ -44,12 +44,16 @@ class UnigramFeature(FeatureExtractor):
     """
     def __init__(self):
         self.unigram = {}
+        self.smoothing_alpha = 1
+        
         
     def zero(self):
         return 0
     
+    
     def two(self):
         return 2
+        
         
     def fit(self, text_set: list):
         """Fit a feature extractor based on given data 
@@ -59,7 +63,7 @@ class UnigramFeature(FeatureExtractor):
         """
         self.unigram["<START>"] = 0
         self.unigram["<STOP>"] = 1
-        self.unigram["<UNC>"] = 2
+        self.unigram["<UNK>"] = 2
         index = 3
         count = defaultdict(self.zero)
         for i in range(0, len(text_set)):
@@ -70,6 +74,7 @@ class UnigramFeature(FeatureExtractor):
                     index += 1
                 else:
                     continue
+              
                     
     def transform(self, text: list):
         """Transform a given sentence into vectors based on the extractor you got from self.fit()
@@ -91,6 +96,7 @@ class UnigramFeature(FeatureExtractor):
         
         return feature
     
+    
     def transform_list(self, text_set):
         # Add your code here!
         features = []
@@ -99,8 +105,9 @@ class UnigramFeature(FeatureExtractor):
         
         return np.array(features)
 
+
     def token_log_probs(self, features):
-        return np.log(np.sum(features, axis = 0)) - np.log(np.sum(features))
+        return np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log(np.sum(features) + self.smoothing_alpha * len(features))
 
 class BigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
@@ -122,7 +129,7 @@ class BigramFeature(FeatureExtractor):
         """
         self.unigram["<START>"] = 0
         self.unigram["<STOP>"] = 1
-        self.unigram["<UNC>"] = 2
+        self.unigram["<UNK>"] = 2
         index = 3
         count = defaultdict(self.zero)
         for i in range(0, len(text_set)):
