@@ -106,8 +106,12 @@ class UnigramFeature(FeatureExtractor):
         return np.array(features)
 
 
-    def token_log_probs(self, features):
-        return np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log(np.sum(features) + self.smoothing_alpha * len(features))
+    def token_log_probs(self, features, smoothing = True):
+        if (smoothing):
+            prob = np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log(np.sum(features) + self.smoothing_alpha * len(features))
+        else:
+            prob = np.log(np.sum(features, axis = 0)) - np.log(np.sum(features))
+        return prob
 
 class BigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
