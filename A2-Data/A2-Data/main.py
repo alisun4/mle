@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 
 def get_features(filename, feat_extractor):
-    f = open(filename)
+    f = open(filename, 'r', encoding="utf-8")
     text_set = f.readlines()
     f.close()
     
@@ -35,7 +35,7 @@ def main():
     elif args.feature == "bigram":
         feat_extractor = BigramFeature()
         
-    f = open("1b_benchmark.train.tokens")
+    f = open("1b_benchmark.train.tokens", 'r', encoding="utf-8")
     train_set = f.readlines()
     f.close()
     
