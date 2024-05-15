@@ -119,6 +119,7 @@ class BigramFeature(FeatureExtractor):
     """
     def __init__(self):
         self.unigram = {}
+        self.smoothing_alpha = 1
         
     def zero(self):
         return 0
@@ -174,6 +175,8 @@ class BigramFeature(FeatureExtractor):
         
         return np.array(features)
     
-    def token_log_probs(self, features):
+    def token_log_probs(self, features, smoothing = True):
+        if (smoothing):
+            return np.log(np.sum(features, axis=0) + self.smoothing_alpha) - np.log(np.sum(features, axis=(0,1)) + features.shape[1] * self.smoothing_alpha)
         return np.log(np.sum(features, axis=0)) - np.log(np.sum(features, axis=(0,1)))
     

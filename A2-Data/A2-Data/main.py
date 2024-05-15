@@ -26,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--feature', '-f', type=str, default='unigram',
                         choices=['unigram', 'bigram', 'trigram'])
+    parser.add_argument('--smoothing', '-s', type=bool, default=False)
     args = parser.parse_args()
     if args.feature == "unigram":
         feat_extractor = UnigramFeature()
