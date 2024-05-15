@@ -20,7 +20,11 @@ def get_features(filename, feat_extractor):
     return np.array(features)
 
 def perplexity(features, probs):
-    return np.exp(np.dot(features, np.transpose(probs)))
+    dims = features.shape
+    dim1 = 1
+    for i in range(1, len(dims)):
+        dim1 *= dims[i]
+    return np.exp(np.dot(features.reshape(dims[0], dim1), probs))
 
 def main():
     parser = argparse.ArgumentParser()
@@ -50,7 +54,7 @@ def main():
     
     print(train_features.shape)
     
-    train_log_probs = feat_extractor.token_log_probs(train_features)
+    train_log_probs = np.transpose(np.ravel(feat_extractor.token_log_probs(train_features)))
     
     perp = perplexity(train_features, train_log_probs)
     
