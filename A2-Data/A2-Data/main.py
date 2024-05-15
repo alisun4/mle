@@ -4,7 +4,7 @@ import argparse
 from tqdm import tqdm
 
 def get_features(filename, feat_extractor):
-    f = open(filename)
+    f = open(filename, 'r', encoding="utf-8")
     text_set = f.readlines()
     f.close()
     features = []
@@ -33,7 +33,7 @@ def main():
     elif args.feature == "bigram":
         feat_extractor = BigramFeature()
         
-    f = open("1b_benchmark.train.tokens")
+    f = open("1b_benchmark.train.tokens", 'r', encoding="utf-8")
     train_set = f.readlines()
     f.close()
     
