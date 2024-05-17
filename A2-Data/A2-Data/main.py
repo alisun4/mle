@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 from tqdm import tqdm
 
-def get_features(filename, feat_extractor):
+def get_features(filename, feat_extractor, args_feature):
     f = open(filename, 'r', encoding="utf-8")
     text_set = f.readlines()
     f.close()
@@ -16,10 +16,19 @@ def get_features(filename, feat_extractor):
         i += 1
     
     # print(features[:5])
+    if args_feature == "bigram":
+        return features
     
     return np.array(features)
 
-def perplexity(features, probs):
+def perplexity(features, log_probs, args_feature):
+    if args_feature == "bigram":
+        probs = []
+        for feature_vect in tqdm(features):
+            prob = np.exp(np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1]))
+            probs.append(prob)
+        return np.array(probs)
+
     dims = features.shape
     dim1 = 1
     for i in range(1, len(dims)):
@@ -50,13 +59,16 @@ def main():
     
     print(len(feat_extractor.unigram))
 
-    train_features = get_features("1b_benchmark.train.tokens", feat_extractor)
+    train_features = get_features("1b_benchmark.train.tokens", feat_extractor, args.feature)
     
-    print(train_features.shape)
+    # print(train_features.shape)
+    if args.feature == "bigram":
+        print("Calculating bigram probabilities.")
+        train_log_probs = feat_extractor.token_log_probs(train_features)
+    else:
+        train_log_probs = np.transpose(np.ravel(feat_extractor.token_log_probs(train_features)))
     
-    train_log_probs = np.transpose(np.ravel(feat_extractor.token_log_probs(train_features)))
-    
-    perp = perplexity(train_features, train_log_probs)
+    perp = perplexity(train_features, train_log_probs, args.feature)
     
     print(perp)
     

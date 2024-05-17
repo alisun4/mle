@@ -120,6 +120,8 @@ class BigramFeature(FeatureExtractor):
     def __init__(self):
         self.unigram = {}
         self.smoothing_alpha = 1
+        self.unigram_counter = np.array([])
+        self.not_trained = True
         
     def zero(self):
         return 0
@@ -159,11 +161,24 @@ class BigramFeature(FeatureExtractor):
         Returns:
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
-        feature = np.zeros((len(self.unigram), len(self.unigram)))
-        feature[0][self.index(text[0])] += 1
+        word_count = len(self.unigram)
+        if self.not_trained:
+            self.unigram_counter = np.zeros(word_count)
+        feature = np.array([[self.index(text[0]), 1]])
         for i in range(0, len(text)-1):
-            feature[self.index(text[i].lower())][self.index(text[i+1].lower())] += 1
-        feature[self.index(text[-1].lower())][1] += 1
+            bigram_index = self.index(text[i].lower())*word_count + self.index(text[i+1].lower())
+            if self.not_trained:
+                self.unigram_counter[self.index(text[i].lower())] += 1
+            if np.isin(bigram_index, feature[:, 0]):
+                feature[:,1] += (feature[:, 0] == bigram_index)
+                continue
+
+            feature = np.append(feature, [[bigram_index, 1]], axis=0)
+
+            
+        feature = np.append(feature, [[self.index(text[len(text)-1].lower())*word_count+1, 1]], axis=0)
+        self.unigram_counter[1] += 1
+        self.not_trained = False
         
         return feature
     
@@ -176,7 +191,22 @@ class BigramFeature(FeatureExtractor):
         return np.array(features)
     
     def token_log_probs(self, features, smoothing = True):
-        if (smoothing):
-            return np.log(np.sum(features, axis=0) + self.smoothing_alpha) - np.log(np.sum(features, axis=(0,1)) + features.shape[1] * self.smoothing_alpha)
-        return np.log(np.sum(features, axis=0)) - np.log(np.sum(features, axis=(0,1)))
+        word_count = len(self.unigram)
+        u_bigram_count = word_count*word_count
+
+        bigram_counter = np.zeros(u_bigram_count)
+
+        for feature_vect in features:
+            bigram_counter[feature_vect[:, 0]] += feature_vect[:, 1]
+        
+        prior_indexes = np.arange(u_bigram_count)
+
+        probs = np.empty(u_bigram_count)
+
+        probs[prior_indexes] = np.log(bigram_counter[prior_indexes]+1) - np.log(self.unigram_counter[prior_indexes//word_count]+word_count)
+
+        return probs
+
+
+
     
