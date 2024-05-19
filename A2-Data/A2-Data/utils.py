@@ -23,7 +23,7 @@ def tokenize(text, pattern = default_pattern):
     Returns:
         list -- list of tokenized words, such as ['I', 'love', 'nlp']
     """
-    text = text.lower()
+    # text = text
     return regexp_tokenize(text, pattern)
 
 class FeatureExtractor(object):
@@ -71,7 +71,7 @@ class UnigramFeature(FeatureExtractor):
             for j in range(0, len(text_set[i])):
                 count[text_set[i][j]] += 1
                 if count[text_set[i][j]] == 3:
-                    self.unigram[text_set[i][j].lower()] = index
+                    self.unigram[text_set[i][j]] = index
                     index += 1
                 else:
                     continue
@@ -90,8 +90,8 @@ class UnigramFeature(FeatureExtractor):
         feature[0] += 1
         feature[1] += 1
         for i in range(0, len(text)):
-            if text[i].lower() in self.unigram:
-                feature[self.unigram[text[i].lower()]] += 1
+            if text[i] in self.unigram:
+                feature[self.unigram[text[i]]] += 1
             else:
                 feature[2] += 1
         
@@ -147,7 +147,7 @@ class BigramFeature(FeatureExtractor):
             for j in range(0, len(text_set[i])):
                 count[text_set[i][j]] += 1
                 if count[text_set[i][j]] == 3:
-                    self.unigram[text_set[i][j].lower()] = index
+                    self.unigram[text_set[i][j]] = index
                     index += 1
                 else:
                     continue
@@ -166,9 +166,9 @@ class BigramFeature(FeatureExtractor):
             self.unigram_counter = np.zeros(word_count)
         feature = np.array([[self.index(text[0]), 1]])
         for i in range(0, len(text)-1):
-            bigram_index = self.index(text[i].lower())*word_count + self.index(text[i+1].lower())
+            bigram_index = self.index(text[i])*word_count + self.index(text[i+1])
             if self.not_trained:
-                self.unigram_counter[self.index(text[i].lower())] += 1
+                self.unigram_counter[self.index(text[i])] += 1
             if np.isin(bigram_index, feature[:, 0]):
                 feature[:,1] += (feature[:, 0] == bigram_index)
                 continue
@@ -176,7 +176,7 @@ class BigramFeature(FeatureExtractor):
             feature = np.append(feature, [[bigram_index, 1]], axis=0)
 
             
-        feature = np.append(feature, [[self.index(text[len(text)-1].lower())*word_count+1, 1]], axis=0)
+        feature = np.append(feature, [[self.index(text[len(text)-1])*word_count+1, 1]], axis=0)
         self.unigram_counter[1] += 1
         self.not_trained = False
         
