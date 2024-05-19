@@ -24,7 +24,7 @@ def tokenize(text, pattern = default_pattern):
         list -- list of tokenized words, such as ['I', 'love', 'nlp']
     """
     # text = text
-    return regexp_tokenize(text, pattern)
+    return text.split()
 
 class FeatureExtractor(object):
     """Base class for feature extraction.
@@ -196,7 +196,7 @@ class BigramFeature(FeatureExtractor):
 
         bigram_counter = np.zeros(u_bigram_count)
 
-        for feature_vect in features:
+        for feature_vect in tqdm(features):
             bigram_counter[feature_vect[:, 0]] += feature_vect[:, 1]
         
         prior_indexes = np.arange(u_bigram_count)
