@@ -23,17 +23,18 @@ def get_features(filename, feat_extractor, args_feature):
 
 def perplexity(features, log_probs, args_feature):
     if args_feature == "bigram":
-        probs = []
+        log_prob_sum = 0
+        bigram_count = 0
         for feature_vect in tqdm(features):
-            prob = np.exp(np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1]))
-            probs.append(prob)
-        return np.array(probs)
+            log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
+            bigram_count += np.sum(feature_vect[:,1])
+        return np.exp(log_prob_sum/bigram_count)
 
     dims = features.shape
     dim1 = 1
     for i in range(1, len(dims)):
         dim1 *= dims[i]
-    return np.exp(np.dot(features.reshape(dims[0], dim1), probs))
+    return np.exp(-np.sum(np.dot(features.reshape(dims[0], dim1), log_probs))/np.sum(features))
 
 def main():
     parser = argparse.ArgumentParser()
