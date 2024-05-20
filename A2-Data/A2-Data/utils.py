@@ -208,5 +208,112 @@ class BigramFeature(FeatureExtractor):
         return probs
 
 
-
+class TrigramFeature(FeatureExtractor):
+    """Example code for unigram feature extraction
+    """
+    def __init__(self):
+        self.unigram = {}
+        self.smoothing_alpha = 1
+        self.unigram_counter = np.array([])
+        self.not_trained = True
+        self.bigrams = defaultdict(self.zero)
+        self.trigrams = defaultdict(self.zero)
+        self.bigram_counts = 0
+        self.trigram_counts = 0
+        
+    def zero(self):
+        return 0
     
+    def bigram_count(self):
+        return self.bigram_counts
+    
+    def trigram_count(self):
+        return self.trigram_count
+    
+    def index(self, token):
+        if token in self.unigram:
+            return self.unigram[token]
+        
+        return -1
+        
+    def fit(self, text_set: list):
+        """Fit a feature extractor based on given data 
+        
+        Arguments:
+            text_set {list} -- list of tokenized sentences and words are lowercased, such as [["I", "love", "nlp"], ["I", "like", "python"]]
+        """
+        self.unigram["<START>"] = 0
+        self.unigram["<STOP>"] = 1
+        self.unigram["<UNK>"] = 2
+        index = 3
+        count = defaultdict(self.zero)
+        for i in range(0, len(text_set)):
+            for j in range(0, len(text_set[i])):
+                count[text_set[i][j]] += 1
+                if count[text_set[i][j]] == 3:
+                    self.unigram[text_set[i][j]] = index
+                    index += 1
+                else:
+                    continue
+                    
+    def transform(self, text: list):
+        """Transform a given sentence into vectors based on the extractor you got from self.fit()
+        
+        Arguments:
+            text {list} -- a tokenized sentence (list of words), such as ["I", "love", "nlp"]
+        
+        Returns:
+            array -- an unigram feature array, such as array([1,1,1,0,0,0])
+        """
+        word_count = len(self.unigram)
+        text.insert(0, "<START>")
+        text.append("<STOP>")
+
+        if self.not_trained:
+            self.unigram_counter = np.zeros(word_count)
+        feature = np.array([[self.index(text[0]), 1]])
+
+        for i in range(1, len(text)):
+            if self.index(text[i]) == -1:
+                text[i] = "<UNK>"
+
+            trigram_index = -1
+            if i != 1:
+                trigram_index = self.index(text[i])*word_count**2 + self.index(text[i-1])*word_count + self.index(text[i-2])
+
+            bigram_index = self.index(text[i])*word_count + self.index(text[i-1])
+
+            self.trigrams[trigram_index] += 1
+            self.trigram_counts += 1
+            self.bigrams[bigram_index] += 1
+            self.bigram_counts += 1
+            
+            self.unigram_counter[self.index(text[i])] += 1
+            feature = np.append(feature, [[trigram_index, bigram_index]], axis=0)
+
+        self.unigram_counter[1] += 1
+        self.not_trained = False
+        
+        return feature
+    
+    def transform_list(self, text_set):
+        features = []
+        for i in range(0, len(text_set)):
+            features.append(self.transform(text_set[i]))
+        
+        return np.array(features)
+    
+    def token_log_probs(self, features, smoothing = True):
+        word_count = len(self.unigram)
+        probabilities = []
+        for feature_vect in features:
+            sum = 0
+            for indexes in feature_vect:
+                trigram_count = self.trigrams[indexes[0]]
+                bigram_count = self.bigrams[indexes[1]]
+                if indexes[0] == -1:
+                    trigram_count = bigram_count
+                sum += (np.log(trigram_count+1) - np.log(bigram_count + word_count))
+            probabilities.append(sum)
+        return sum
+                
