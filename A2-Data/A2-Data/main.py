@@ -28,13 +28,13 @@ def perplexity(features, log_probs, args_feature, smoothing,feat_extractor = Non
         for feature_vect in tqdm(features):
             log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
             bigram_count += np.sum(feature_vect[:,1])
-        return np.exp(log_prob_sum/bigram_count)
+        return 2**(log_prob_sum/bigram_count)
     
     if args_feature == "trigram":
         log_prob_sum = 0
         log_prob_sum -= sum(log_probs)
         total_count = feat_extractor.num_tokens()
-        return np.exp(log_prob_sum/total_count)
+        return 2**(log_prob_sum/total_count)
 
     dims = features.shape
     dim1 = 1

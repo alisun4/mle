@@ -203,7 +203,7 @@ class BigramFeature(FeatureExtractor):
 
         probs = np.empty(u_bigram_count)
 
-        probs[prior_indexes] = np.log(bigram_counter[prior_indexes]+1) - np.log(self.unigram_counter[prior_indexes//word_count]+word_count)
+        probs[prior_indexes] = np.log2(bigram_counter[prior_indexes]+1) - np.log2(self.unigram_counter[prior_indexes//word_count]+word_count)
 
         return probs
 
@@ -324,17 +324,17 @@ class TrigramFeature(FeatureExtractor):
                     trigram_count = self.trigram_count(indexes[0])
                     bigram_count = self.bigram_count(indexes[1])
                     if smoothing:
-                        log_prob_sum += (np.log(trigram_count + 1) - np.log(bigram_count + word_count))
+                        log_prob_sum += (np.log2(trigram_count + 1) - np.log2(bigram_count + word_count))
                     else:
-                        log_prob_sum += (np.log(trigram_count) - np.log(bigram_count))
+                        log_prob_sum += (np.log2(trigram_count) - np.log2(bigram_count))
                     
                 else:
                     bigram_count = self.bigram_count(indexes[1])
                     unigram_count = self.unigram_counter[0]
                     if smoothing:
-                        log_prob_sum += (np.log(bigram_count + 1) - np.log(unigram_count + word_count))
+                        log_prob_sum += (np.log2(bigram_count + 1) - np.log2(unigram_count + word_count))
                     else:
-                        log_prob_sum += (np.log(bigram_count) - np.log(unigram_count))
+                        log_prob_sum += (np.log2(bigram_count) - np.log2(unigram_count))
             probabilities.append(log_prob_sum)
         return probabilities
                 
