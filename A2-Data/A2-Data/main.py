@@ -21,7 +21,7 @@ def get_features(filename, feat_extractor, args_feature):
     
     return np.array(features)
 
-def perplexity(features, log_probs, args_feature, feat_extractor = None):
+def perplexity(features, log_probs, args_feature, smoothing,feat_extractor = None):
     if args_feature == "bigram":
         log_prob_sum = 0
         bigram_count = 0
@@ -32,15 +32,9 @@ def perplexity(features, log_probs, args_feature, feat_extractor = None):
     
     if args_feature == "trigram":
         log_prob_sum = 0
-        trigram_count = feat_extractor.trigram_count()
-        for feature_vect, log_prob  in tqdm(zip(features, log_probs)):
-            for index in feature_vect:
-                if index[0] == -1:
-                    log_prob_sum -= log_prob * feat_extractor.bigram_count(index[0])
-                else:
-                    log_prob_sum -= log_prob * feat_extractor.trigram_count(index[0])
-        print(log_prob_sum/trigram_count)
-        return np.exp(log_prob_sum/trigram_count)
+        log_prob_sum -= sum(log_probs)
+        total_count = feat_extractor.num_tokens()
+        return np.exp(log_prob_sum/total_count)
 
     dims = features.shape
     dim1 = 1
@@ -77,16 +71,16 @@ def main():
     train_features = get_features("1b_benchmark.train.tokens", feat_extractor, args.feature)
     
     # print(train_features)
-    if args.feature == "bigram":
+    if args.feature == "bigram" or args.feature == "trigram":
         print("Calculating bigram probabilities.")
         train_log_probs = feat_extractor.token_log_probs(train_features)
     else:
         train_log_probs = feat_extractor.token_log_probs(train_features)
     
     if args.feature != "trigram":
-        perp = perplexity(train_features, train_log_probs, args.feature)
+        perp = perplexity(train_features, train_log_probs, args.feature, args.smoothing)
     else:
-        perp = perplexity(train_features, train_log_probs, args.feature, feat_extractor)
+        perp = perplexity(train_features, train_log_probs, args.feature, args.smoothing, feat_extractor)
     
     print(perp)
     
