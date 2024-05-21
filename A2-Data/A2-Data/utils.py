@@ -222,6 +222,9 @@ class TrigramFeature(FeatureExtractor):
     def zero(self):
         return 0
     
+    def num_tokens(self):
+        return np.sum(self.unigram_counter) - self.unigram_counter[0]
+    
     def bigram_count(self, ind = None):
         if ind == None:
             return sum(self.bigrams.values())
@@ -269,33 +272,37 @@ class TrigramFeature(FeatureExtractor):
         Returns:
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
+        copied_text = text[:]
         word_count = len(self.unigram)
-        text.insert(0, "<START>")
-        text.append("<STOP>")
+        copied_text.insert(0, "<START>")
+        copied_text.append("<STOP>")
 
         if self.not_trained:
             self.unigram_counter = np.zeros(word_count)
-        feature = np.array([[self.index(text[0]), 1]])
+        
+        if self.index(copied_text[1]) == -1:
+            copied_text[1] = "<UNK>"
+        feature = np.array([[-1, self.index(copied_text[1])]])
+        self.unigram_counter[0] += 1
+        self.unigram_counter[self.index(copied_text[1])] += 1
 
-        for i in range(1, len(text)):
-            if self.index(text[i]) == -1:
-                text[i] = "<UNK>"
+
+        for i in range(2, len(copied_text)):
+            if self.index(copied_text[i]) == -1:
+                copied_text[i] = "<UNK>"
 
             trigram_index = -1
-            if i == 1:
-                bigram_index = self.index(text[i])*word_count + self.index(text[i-1])
-            else:
-                bigram_index = self.index(text[i-1])*word_count + self.index(text[i-2])
-                trigram_index = self.index(text[i])*word_count**2 + self.index(text[i-1])*word_count + self.index(text[i-2])
-            
+            bigram_index = self.index(copied_text[i-2])*word_count + self.index(copied_text[i-1])
+            trigram_index = self.index(copied_text[i-2])*word_count**2 + self.index(copied_text[i-1])*word_count + self.index(copied_text[i])
 
-            self.trigrams[trigram_index] += 1
+            if trigram_index != -1:
+                self.trigrams[trigram_index] += 1
             self.bigrams[bigram_index] += 1
-            
-            self.unigram_counter[self.index(text[i])] += 1
+
+            self.unigram_counter[self.index(copied_text[i])] += 1
+
             feature = np.append(feature, [[trigram_index, bigram_index]], axis=0)
 
-        self.unigram_counter[1] += 1
         self.not_trained = False
         
         return feature
@@ -307,15 +314,27 @@ class TrigramFeature(FeatureExtractor):
         
         return np.array(features)
     
-    def token_log_probs(self, features, smoothing = True):
-        word_count = len(self.unigram)
+    def token_log_probs(self, features, smoothing = False):
         probabilities = []
+        word_count = len(self.unigram)
         for feature_vect in features:
             log_prob_sum = 0
             for indexes in feature_vect:
-                trigram_count = self.trigram_count(indexes[0])
-                bigram_count = self.bigram_count(indexes[1])
-                log_prob_sum += (np.log(trigram_count+1) - np.log(bigram_count + word_count))
+                if indexes[0] != -1:
+                    trigram_count = self.trigram_count(indexes[0])
+                    bigram_count = self.bigram_count(indexes[1])
+                    if smoothing:
+                        log_prob_sum += (np.log(trigram_count + 1) - np.log(bigram_count + word_count))
+                    else:
+                        log_prob_sum += (np.log(trigram_count) - np.log(bigram_count))
+                    
+                else:
+                    bigram_count = self.bigram_count(indexes[1])
+                    unigram_count = self.unigram_counter[0]
+                    if smoothing:
+                        log_prob_sum += (np.log(bigram_count + 1) - np.log(unigram_count + word_count))
+                    else:
+                        log_prob_sum += (np.log(bigram_count) - np.log(unigram_count))
             probabilities.append(log_prob_sum)
         return probabilities
                 
