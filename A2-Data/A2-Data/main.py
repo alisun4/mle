@@ -16,12 +16,12 @@ def get_features(filename, feat_extractor, args_feature):
         i += 1
     
     # print(features[:5])
-    if args_feature == "bigram":
+    if args_feature == "bigram" or args_feature == "trigram":
         return features
     
     return np.array(features)
 
-def perplexity(features, log_probs, args_feature):
+def perplexity(features, log_probs, args_feature, feat_extractor = None):
     if args_feature == "bigram":
         log_prob_sum = 0
         bigram_count = 0
@@ -29,6 +29,18 @@ def perplexity(features, log_probs, args_feature):
             log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
             bigram_count += np.sum(feature_vect[:,1])
         return np.exp(log_prob_sum/bigram_count)
+    
+    if args_feature == "trigram":
+        log_prob_sum = 0
+        trigram_count = feat_extractor.trigram_count()
+        for feature_vect, log_prob  in tqdm(zip(features, log_probs)):
+            for index in feature_vect:
+                if index[0] == -1:
+                    log_prob_sum -= log_prob * feat_extractor.bigram_count(index[0])
+                else:
+                    log_prob_sum -= log_prob * feat_extractor.trigram_count(index[0])
+        print(log_prob_sum/trigram_count)
+        return np.exp(log_prob_sum/trigram_count)
 
     dims = features.shape
     dim1 = 1
@@ -46,6 +58,8 @@ def main():
         feat_extractor = UnigramFeature()
     elif args.feature == "bigram":
         feat_extractor = BigramFeature()
+    elif args.feature == "trigram":
+        feat_extractor = TrigramFeature()
         
     f = open("1b_benchmark.train.tokens", 'r', encoding="utf-8")
     train_set = f.readlines()
@@ -62,14 +76,17 @@ def main():
 
     train_features = get_features("1b_benchmark.train.tokens", feat_extractor, args.feature)
     
-    # print(train_features.shape)
+    # print(train_features)
     if args.feature == "bigram":
         print("Calculating bigram probabilities.")
         train_log_probs = feat_extractor.token_log_probs(train_features)
     else:
-        train_log_probs = np.transpose(np.ravel(feat_extractor.token_log_probs(train_features)))
+        train_log_probs = feat_extractor.token_log_probs(train_features)
     
-    perp = perplexity(train_features, train_log_probs, args.feature)
+    if args.feature != "trigram":
+        perp = perplexity(train_features, train_log_probs, args.feature)
+    else:
+        perp = perplexity(train_features, train_log_probs, args.feature, feat_extractor)
     
     print(perp)
     
