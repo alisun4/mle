@@ -46,7 +46,7 @@ class UnigramFeature(FeatureExtractor):
     def __init__(self):
         self.unigram = {}
         self.smoothing_alpha = 1
-        
+        self.num_tokens = 0
         
     def zero(self):
         return 0
@@ -95,6 +95,8 @@ class UnigramFeature(FeatureExtractor):
             else:
                 feature[2] += 1
         
+        self.num_tokens = np.sum(feature[1:])
+
         return feature
     
     
@@ -131,6 +133,9 @@ class BigramFeature(FeatureExtractor):
             return self.unigram[token]
         
         return 2
+    
+    def num_tokens(self):
+        return np.sum(self.unigram_counter) - self.unigram_counter[0]
         
     def fit(self, text_set: list):
         """Fit a feature extractor based on given data 
@@ -151,19 +156,20 @@ class BigramFeature(FeatureExtractor):
                     index += 1
                 else:
                     continue
+        
+        self.unigram_counter = np.zeros(len(self.unigram))
                     
     def transform(self, text: list):
         """Transform a given sentence into vectors based on the extractor you got from self.fit()
         
         Arguments:
             text {list} -- a tokenized sentence (list of words), such as ["I", "love", "nlp"]
-        
+
         Returns:
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
         word_count = len(self.unigram)
-        if self.not_trained:
-            self.unigram_counter = np.zeros(word_count)
+            
         feature = np.array([[self.index(text[0]), 1]])
         for i in range(0, len(text)-1):
             bigram_index = self.index(text[i])*word_count + self.index(text[i+1])
@@ -178,7 +184,6 @@ class BigramFeature(FeatureExtractor):
             
         feature = np.append(feature, [[self.index(text[len(text)-1])*word_count+1, 1]], axis=0)
         self.unigram_counter[1] += 1
-        self.not_trained = False
         
         return feature
     
