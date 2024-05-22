@@ -8,16 +8,16 @@ def get_features(filename, feat_extractor, args_feature):
     text_set = f.readlines()
     f.close()
     features = []
-    i = 0
+    # i = 0
     for text in tqdm(text_set):
         feature_vect = feat_extractor.transform(tokenize(text))
         # print(len(feature_vect))
         features.append(feature_vect)
-        i += 1
+        # i += 1
 
     
-    # if args_feature == "bigram":
-    #     feat_extractor.not_trained = False
+    if args_feature == "bigram":
+        feat_extractor.not_trained = False
     
     # print(features[:5])
     if args_feature == "bigram" or args_feature == "trigram":
@@ -26,39 +26,41 @@ def get_features(filename, feat_extractor, args_feature):
     return np.array(features)
 
 def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None):
-    if args_feature == "bigram":
+    # if args_feature == "bigram":
+    #     log_prob_sum = 0
+    #     total_count =  feat_extractor.num_tokens()
+    #     for feature_vect in tqdm(features):
+    #         log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
+    #     print(feat_extractor.unigram_counter)
+    #     print(log_probs)
+    #     print(log_prob_sum)
+    #     print(total_count)
+    #     print(log_prob_sum/total_count)
+    #     return np.exp(log_prob_sum/total_count)
+    
+    if args_feature != "unigram":
         log_prob_sum = 0
-        total_count =  feat_extractor.num_tokens()
-        for feature_vect in tqdm(features):
-            log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
-        print(log_probs)
+        for feature_vect in features:
+            for feature in feature_vect:
+                log_prob_sum -= log_probs[feature]
+        total_count = feat_extractor.num_tokens()
         print(log_prob_sum)
         print(total_count)
         print(log_prob_sum/total_count)
         return np.exp(log_prob_sum/total_count)
-    
-    if args_feature == "trigram":
-        log_prob_sum = 0
-        log_prob_sum -= sum(log_probs)
-        total_count = feat_extractor.num_tokens()
-        return np.exp(log_prob_sum/total_count)
 
-    dims = features.shape
-    dim1 = 1
-    for i in range(1, len(dims)):
-        dim1 *= dims[i]
-    return np.exp(-np.sum(np.dot(features.reshape(dims[0], dim1), log_probs))/np.sum(features[1:,:]))
+    return np.exp(-np.sum(np.dot(features, log_probs))/np.sum(features[1:,:]))
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--feature', '-f', type=str, default='unigram',
                         choices=['unigram', 'bigram', 'trigram'])
-    parser.add_argument('--smoothing', '-s', type=bool, default=False)
+    parser.add_argument('--smoothing', '-s', type=float, default=0)
     args = parser.parse_args()
     if args.feature == "unigram":
         feat_extractor = UnigramFeature()
     elif args.feature == "bigram":
-        feat_extractor = BigramFeature()
+        feat_extractor = BigramFeature(smoothing_alpha=args.smoothing)
     elif args.feature == "trigram":
         feat_extractor = TrigramFeature()
         
@@ -75,7 +77,7 @@ def main():
     
     print(len(feat_extractor.unigram))
 
-    train_features = get_features("1b_benchmark.train.tokens", feat_extractor, args.feature)
+    train_features = get_features("1b_benchmark.dev.tokens", feat_extractor, args.feature)
     
     # print(train_features)
     if args.feature == "bigram" or args.feature == "trigram":
