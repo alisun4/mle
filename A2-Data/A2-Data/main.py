@@ -24,41 +24,53 @@ def get_features(filename, feat_extractor, args_feature):
         return features
     
     return np.array(features)
-  
-def perplexity(features, log_probs, args_feature, smoothing,feat_extractor = None):
-    if args_feature == "bigram":
-        log_prob_sum = 0
-        bigram_count = 0
-        for feature_vect in tqdm(features):
-            log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
-            bigram_count += np.sum(feature_vect[:,1])
-        return 2**(log_prob_sum/bigram_count)
-    
+
+def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None):
     if args_feature != "unigram":
         log_prob_sum = 0
+        total_count = 0
         for feature_vect in features:
             for feature in feature_vect:
                 log_prob_sum -= log_probs[feature]
-        total_count = feat_extractor.num_tokens()
+            total_count += len(feature_vect) + 1
+        # total_count = feat_extractor.num_tokens()
+        # print(log_prob_sum)
+        # print(total_count)
+        # print(log_prob_sum/total_count)
+        return np.exp(log_prob_sum/total_count)
+    
+    # print(features)
+    # print(np.dot(features, log_probs))
+    # print(np.sum(features))
+    # print(features.shape)
 
-        return 2**(log_prob_sum/total_count)
+    s_log_prob = np.log(features.shape[0]) - np.log(np.sum(features) + 2*features.shape[0])
 
-    return np.exp(-np.sum(np.dot(features, log_probs))/np.sum(features[1:,:]))
+    return np.exp(-(np.sum(np.dot(features, log_probs)) + s_log_prob)/(np.sum(features) + 2*features.shape[0]))
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--feature', '-f', type=str, default='unigram',
                         choices=['unigram', 'bigram', 'trigram'])
     parser.add_argument('--smoothing', '-s', type=float, default=0)
+    parser.add_argument('--debug', '-d', type=bool, default=False)
+    parser.add_argument('--test', '-t', type=str, default='train')
     args = parser.parse_args()
     if args.feature == "unigram":
-        feat_extractor = UnigramFeature()
+        feat_extractor = UnigramFeature(smoothing_alpha=args.smoothing)
     elif args.feature == "bigram":
         feat_extractor = BigramFeature(smoothing_alpha=args.smoothing)
     elif args.feature == "trigram":
         feat_extractor = TrigramFeature()
+    
+    train = "train"
+    test = args.test
+
+    if args.debug:
+        train = "tiny"
+        test = "tiny"
         
-    f = open("1b_benchmark.train.tokens", 'r', encoding="utf-8")
+    f = open(f"1b_benchmark.{train}.tokens", 'r', encoding="utf-8")
     train_set = f.readlines()
     f.close()
     
@@ -71,7 +83,7 @@ def main():
     
     print(len(feat_extractor.unigram))
 
-    train_features = get_features("1b_benchmark.dev.tokens", feat_extractor, args.feature)
+    train_features = get_features(f"1b_benchmark.{test}.tokens", feat_extractor, args.feature)
     
     # print(train_features)
     if args.feature == "bigram" or args.feature == "trigram":

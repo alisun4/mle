@@ -43,9 +43,9 @@ class FeatureExtractor(object):
 class UnigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
     """
-    def __init__(self):
+    def __init__(self, smoothing_alpha):
         self.unigram = {}
-        self.smoothing_alpha = 1
+        self.smoothing_alpha = smoothing_alpha
         self.num_tokens = 0
         
     def zero(self):
@@ -62,9 +62,8 @@ class UnigramFeature(FeatureExtractor):
         Arguments:
             text_set {list} -- list of tokenized sentences and words are lowercased, such as [["I", "love", "nlp"], ["I", "like", "python"]]
         """
-        self.unigram["<STOP>"] = 0
-        self.unigram["<UNK>"] = 1
-        index = 2
+        self.unigram["<UNK>"] = 0
+        index = 1
         count = defaultdict(self.zero)
         for i in range(0, len(text_set)):
             for j in range(0, len(text_set[i])):
@@ -86,7 +85,7 @@ class UnigramFeature(FeatureExtractor):
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
         feature = np.zeros(len(self.unigram))
-        feature[0] += 1
+        # feature[0] += 1
         for i in range(0, len(text)):
             if text[i] in self.unigram:
                 feature[self.unigram[text[i]]] += 1
@@ -108,10 +107,10 @@ class UnigramFeature(FeatureExtractor):
 
 
     def token_log_probs(self, features, smoothing = True):
-        if (smoothing):
-            prob = np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log(np.sum(features) + self.smoothing_alpha * len(features))
-        else:
-            prob = np.log(np.sum(features, axis = 0)) - np.log(np.sum(features))
+        # print(features.shape)
+        # print(np.sum(features))
+        prob = np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log((np.sum(features) + features.shape[0]) + self.smoothing_alpha * ((features.shape[1])+1))
+        # print(prob)
         return prob
 
 class BigramFeature(FeatureExtractor):
@@ -227,7 +226,9 @@ class BigramFeature(FeatureExtractor):
                     # print()
                     probabilities[index] = np.log(bigram_count + self.smoothing_alpha) - np.log(self.unigram_counter[index//word_count] + word_count*self.smoothing_alpha)
 
-        probs[prior_indexes] = np.log2(bigram_counter[prior_indexes]+1) - np.log2(self.unigram_counter[prior_indexes//word_count]+word_count)
+        # print(probabilities)
+        # print()
+
         return probabilities
 
 
@@ -346,17 +347,17 @@ class TrigramFeature(FeatureExtractor):
                     trigram_count = self.trigram_count(indexes[0])
                     bigram_count = self.bigram_count(indexes[1])
                     if smoothing:
-                        log_prob_sum += (np.log2(trigram_count + 1) - np.log2(bigram_count + word_count))
+                        log_prob_sum += (np.log(trigram_count + 1) - np.log(bigram_count + word_count))
                     else:
-                        log_prob_sum += (np.log2(trigram_count) - np.log2(bigram_count))
+                        log_prob_sum += (np.log(trigram_count) - np.log(bigram_count))
                     
                 else:
                     bigram_count = self.bigram_count(indexes[1])
                     unigram_count = self.unigram_counter[0]
                     if smoothing:
-                        log_prob_sum += (np.log2(bigram_count + 1) - np.log2(unigram_count + word_count))
+                        log_prob_sum += (np.log(bigram_count + 1) - np.log(unigram_count + word_count))
                     else:
-                        log_prob_sum += (np.log2(bigram_count) - np.log2(unigram_count))
+                        log_prob_sum += (np.log(bigram_count) - np.log(unigram_count))
             probabilities.append(log_prob_sum)
         return probabilities
                 
