@@ -44,7 +44,9 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
     # print(np.sum(features))
     # print(features.shape)
 
-    s_log_prob = np.log(features.shape[0]) - np.log(np.sum(features) + 2*features.shape[0])
+    s_log_prob = np.log(features.shape[0]) - np.log(np.sum(features) + features.shape[0])
+
+    print(s_log_prob)
 
     return np.exp(-(np.sum(np.dot(features, log_probs)) + s_log_prob)/(np.sum(features) + 2*features.shape[0]))
 
