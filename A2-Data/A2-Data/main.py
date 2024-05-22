@@ -24,19 +24,15 @@ def get_features(filename, feat_extractor, args_feature):
         return features
     
     return np.array(features)
-
-def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None):
-    # if args_feature == "bigram":
-    #     log_prob_sum = 0
-    #     total_count =  feat_extractor.num_tokens()
-    #     for feature_vect in tqdm(features):
-    #         log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
-    #     print(feat_extractor.unigram_counter)
-    #     print(log_probs)
-    #     print(log_prob_sum)
-    #     print(total_count)
-    #     print(log_prob_sum/total_count)
-    #     return np.exp(log_prob_sum/total_count)
+  
+def perplexity(features, log_probs, args_feature, smoothing,feat_extractor = None):
+    if args_feature == "bigram":
+        log_prob_sum = 0
+        bigram_count = 0
+        for feature_vect in tqdm(features):
+            log_prob_sum -= np.sum(log_probs[feature_vect[:,0]]*feature_vect[:,1])
+            bigram_count += np.sum(feature_vect[:,1])
+        return 2**(log_prob_sum/bigram_count)
     
     if args_feature != "unigram":
         log_prob_sum = 0
@@ -44,10 +40,8 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
             for feature in feature_vect:
                 log_prob_sum -= log_probs[feature]
         total_count = feat_extractor.num_tokens()
-        print(log_prob_sum)
-        print(total_count)
-        print(log_prob_sum/total_count)
-        return np.exp(log_prob_sum/total_count)
+
+        return 2**(log_prob_sum/total_count)
 
     return np.exp(-np.sum(np.dot(features, log_probs))/np.sum(features[1:,:]))
 
