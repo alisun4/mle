@@ -3,6 +3,16 @@ import numpy as np
 import argparse
 from tqdm import tqdm
 
+def init_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--feature', '-f', type=str, default='unigram',
+                        choices=['unigram', 'bigram', 'trigram'])
+    parser.add_argument('--smoothing', '-s', type=float, default=0)
+    parser.add_argument('--debug', '-d', type=bool, default=False)
+    parser.add_argument('--test', '-t', type=str, default='train')
+    parser.add_argument('--interpolate', '-i', type=bool, default=False)
+    return parser.parse_args()
+    
 def get_features(filename, feat_extractor, args_feature):
     f = open(filename, 'r', encoding="utf-8")
     text_set = f.readlines()
@@ -15,7 +25,6 @@ def get_features(filename, feat_extractor, args_feature):
         features.append(feature_vect)
         # i += 1
 
-    
     if args_feature == "bigram":
         feat_extractor.not_trained = False
     
@@ -38,7 +47,13 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
             # # print(feature_vect)
             for feature in feature_vect:
                 # # print(log_probs[feature])
-                log_prob_sum -= log_probs[feature]
+                try:
+                    log_prob_sum -= log_probs[feature]
+                except(KeyError):
+                    pass
+                
+                    
+                    
             total_count += len(feature_vect)
             # # print()
         # # print(log_prob_sum)
@@ -61,13 +76,9 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
     return np.exp(-(log_prob_sum)/(np.sum(features)))
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--feature', '-f', type=str, default='unigram',
-                        choices=['unigram', 'bigram', 'trigram'])
-    parser.add_argument('--smoothing', '-s', type=float, default=0)
-    parser.add_argument('--debug', '-d', type=bool, default=False)
-    parser.add_argument('--test', '-t', type=str, default='train')
-    args = parser.parse_args()
+    training_data = []
+    args = init_arg_parser()
+    
     if args.feature == "unigram":
         feat_extractor = UnigramFeature(smoothing_alpha=args.smoothing)
     elif args.feature == "bigram":
@@ -75,41 +86,20 @@ def main():
     elif args.feature == "trigram":
         feat_extractor = TrigramFeature(smoothing_alpha=args.smoothing)
     
-    train = "train"
-    test = args.test
-
-    if args.debug:
-        train = "tiny"
-        test = "tiny"
-        
-    f = open(f"1b_benchmark.{train}.tokens", 'r', encoding="utf-8")
-    train_set = f.readlines()
-    f.close()
+    train, text = ("tiny", "tiny") if (args.debug) else ("train", args.test)
     
-    training_data = []
+    with open(f"1b_benchmark.{train}.tokens", 'r', encoding="utf-8") as f:
+        train_set = f.readlines()
     
     for text in train_set:
         training_data.append(tokenize(text))
-    
+        
     feat_extractor.fit(training_data)
-    
-    # print(len(feat_extractor.unigram))
-
     train_features = get_features(f"1b_benchmark.{train}.tokens", feat_extractor, args.feature)
-    
-    # # print(train_features)
-    if args.feature == "bigram" or args.feature == "trigram":
-        # print("Calculating bigram probabilities.")
-        train_log_probs = feat_extractor.token_log_probs(train_features)
-    else:
-        train_log_probs = feat_extractor.token_log_probs(train_features)
-    
+    train_log_probs = feat_extractor.token_log_probs(train_features)
     test_features = get_features(f"hdtv.txt", feat_extractor, args.feature)
-    
     perp = perplexity(test_features, train_log_probs, args.feature, args.smoothing, feat_extractor)
-    
-    print(perp)
-    
+    print(perp) 
     
 
 if __name__ == "__main__":
