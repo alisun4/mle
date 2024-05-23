@@ -99,7 +99,7 @@ class UnigramFeature(FeatureExtractor):
 
 
     def token_log_probs(self, features, smoothing = True):
-        # print(features.shape)
+        # # print(features.shape)
 
 
         prob = np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log((np.sum(features)) + self.smoothing_alpha * ((features.shape[1])+1))
@@ -177,16 +177,10 @@ class BigramFeature(FeatureExtractor):
         copied_text.append("<STOP>")
         
         feature = []
-        # self.unigram_counter[0] += 1
-        # self.unigram_counter[self.index(copied_text[1])] += 1
-
-        # print(self.unigram)
 
         for i in range(1, len(copied_text)):
 
             bigram_index = self.index(copied_text[i-1])*word_count + self.index(copied_text[i])
-
-            # print(copied_text[i-1], copied_text[i], bigram_index)
 
             self.bigrams[bigram_index] += 1
 
@@ -194,8 +188,6 @@ class BigramFeature(FeatureExtractor):
                 self.unigram_counter[self.index(copied_text[i-1])] += 1
 
             feature.append(bigram_index)
-        # print()
-        # print(self.bigrams)
             
         if self.not_trained:
             self.unigram_counter[1] += 1
@@ -210,17 +202,27 @@ class BigramFeature(FeatureExtractor):
         return np.array(features)
     
     def token_log_probs(self, features, smoothing = False):
+        # # print("I like cheese.")
+        # print(self.bigram_count(self.bigram_index("<START>", "HDTV")))
+
+        # print(self.bigram_count(self.bigram_index("HDTV", ".")))
+
+        # print(self.bigram_count(self.bigram_index(".", "<STOP>")))
+
+        # print(self.unigram_counter[self.index(".")])
+
         probabilities = {}
         word_count = len(self.unigram)
-        print(self.unigram_counter)
+        # print(self.unigram_counter)
         for feature_vect in features:
             for index in feature_vect:
                 if index != -1 and index not in probabilities:
                     bigram_count = self.bigram_count(index)
+                    # # print(bigram_count)
                     unigram_count = self.unigram_counter[index//word_count]
-                    probabilities[index] = np.log(bigram_count + self.smoothing_alpha) - np.log(self.unigram_counter[index//word_count] + word_count*self.smoothing_alpha)
+                    # # print(unigram_count)
+                    probabilities[index] = np.log(bigram_count + self.smoothing_alpha) - np.log(unigram_count + word_count*self.smoothing_alpha)
         
-        # print(self.bigrams)
 
         return probabilities
 
@@ -309,7 +311,7 @@ class TrigramFeature(FeatureExtractor):
         self.unigram_counter[0] += 1
         # self.unigram_counter[self.index(copied_text[1])] += 1
 
-        # print(self.unigram)
+        # # print(self.unigram)
 
         for i in range(2, len(copied_text)):
 
@@ -327,7 +329,7 @@ class TrigramFeature(FeatureExtractor):
         if self.not_trained:
             self.unigram_counter[1] += 1
         
-        # print(self.trigrams)
+        # # print(self.trigrams)
 
         return np.array(feature)
     
@@ -344,31 +346,31 @@ class TrigramFeature(FeatureExtractor):
     def token_log_probs(self, features, smoothing = False):
         probabilities = {}
         word_count = len(self.unigram)
-        # print(self.unigram_counter)
-        # print(self.trigrams)
-        # print(self.bigrams)
-        # print(features)
+        # # print(self.unigram_counter)
+        # # print(self.trigrams)
+        # # print(self.bigrams)
+        # # print(features)
         for feature_vect in features:
             for index in feature_vect:
                 if index != -1 and index not in probabilities:
                     trigram_count = self.trigram_count(index)
-                    # print(trigram_count)
+                    # # print(trigram_count)
                     bigram_index = index//(word_count)
-                    # print(bigram_index)
+                    # # print(bigram_index)
                     bigram_count = self.bigram_count(bigram_index)
-                    # print(bigram_count)
+                    # # print(bigram_count)
 
                     probabilities[index] = np.log(trigram_count + self.smoothing_alpha) - np.log(bigram_count + word_count*self.smoothing_alpha)
-                    # print(probabilities)
+                    # # print(probabilities)
 
         for bigram_index in self.bigrams:
             if bigram_index // word_count == 0:
                 self.start_probs[bigram_index] = np.log(self.bigram_count(bigram_index)) - np.log(self.unigram_counter[0])
         
-        # print(self.start_probs)
+        # # print(self.start_probs)
 
-        # print(probabilities)
-        # print()
+        # # print(probabilities)
+        # # print()
 
         return probabilities
                 
