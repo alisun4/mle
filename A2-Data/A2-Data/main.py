@@ -76,7 +76,9 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
     return np.exp(-(log_prob_sum)/(np.sum(features)))
 
 def main():
-    training_data = []
+    train_data = []
+    # test_data = 'hdtv.txt'
+    test_data = '1b_benchmark.dev.tokens'
     args = init_arg_parser()
     
     if args.feature == "unigram":
@@ -92,12 +94,12 @@ def main():
         train_set = f.readlines()
     
     for text in train_set:
-        training_data.append(tokenize(text))
+        train_data.append(tokenize(text))
         
-    feat_extractor.fit(training_data)
+    feat_extractor.fit(train_data)
     train_features = get_features(f"1b_benchmark.{train}.tokens", feat_extractor, args.feature)
     train_log_probs = feat_extractor.token_log_probs(train_features)
-    test_features = get_features(f"hdtv.txt", feat_extractor, args.feature)
+    test_features = get_features(test_data, feat_extractor, args.feature)
     perp = perplexity(test_features, train_log_probs, args.feature, args.smoothing, feat_extractor)
     print(perp) 
     
