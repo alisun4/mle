@@ -76,7 +76,7 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
     return np.exp(-(log_prob_sum)/(np.sum(features)))
 
 
-def linear_interpolation(trigram_features, lambdas, tri_log_probs, bi_log_probs, uni_log_probs):
+def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs, tri_log_probs):
     # assert (sum(lambdas) == 1, "Weights must sum to 1")
     
     interpolated_log_probs = {}
@@ -85,6 +85,8 @@ def linear_interpolation(trigram_features, lambdas, tri_log_probs, bi_log_probs,
         bigram_feature = trigram_feature % len(uni_log_probs)
         unigram_feature = bigram_feature % len(uni_log_probs) - 1
         
+        # TO-DO: trigram_feature is a list of numbers and can't be used as a index/key
+        print(trigram_feature)
         trigram_log_prob = tri_log_probs[trigram_feature]
         bigram_log_prob = bi_log_probs[bigram_feature]
         unigram_log_prob = uni_log_probs[unigram_feature]
@@ -121,24 +123,23 @@ def main():
         
     # Poor way to handle "this or that", but it works
     if args.feature == "interpolate":
-        uni_feat_extractor.fit(train_data)
+        # uni_feat_extractor.fit(train_data)
         bi_feat_extractor.fit(train_data)
         tri_feat_extractor.fit(train_data)
         
-        uni_features = get_features(f"1b_benchmark.{train}.tokens", uni_feat_extractor, "unigram")
+        # uni_features = get_features(f"1b_benchmark.{train}.tokens", uni_feat_extractor, "unigram")
         bi_features = get_features(f"1b_benchmark.{train}.tokens", bi_feat_extractor, "bigram")
         tri_features = get_features(f"1b_benchmark.{train}.tokens", tri_feat_extractor, "trigram")
         
+        # uni_feat_extractor.transform(train_features)
+        # bi_feat_extractor.transform(bi_features)
+        # tri_feat_extractor.transform(tri_features)
         
-        uni_feat_extractor.transform(train_features)
-        bi_feat_extractor.transform(train_features)
-        tri_feat_extractor.transform(train_features)
-        
-        uni_log_probs = uni_feat_extractor.token_log_probs(uni_features)
+        # uni_log_probs = uni_feat_extractor.token_log_probs(uni_features)
         bi_log_probs = bi_feat_extractor.token_log_probs(bi_features)
         tri_log_probs = tri_feat_extractor.token_log_probs(tri_features)
         
-        linear_interpolation(tri_features, [0.1, 0.3, 0.6], tri_log_probs, bi_log_probs, uni_log_probs)
+        linear_interpolation(tri_features, [0.1, 0.3, 0.6], bi_log_probs, bi_log_probs, tri_log_probs)
         
     else:  
         feat_extractor.fit(train_data)
