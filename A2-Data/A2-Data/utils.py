@@ -43,7 +43,7 @@ class FeatureExtractor(object):
 class UnigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
     """
-    def __init__(self, smoothing_alpha):
+    def __init__(self, smoothing_alpha = 0):
         self.unigram = {}
         self.smoothing_alpha = smoothing_alpha
         self.num_tokens = 0
