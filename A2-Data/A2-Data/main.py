@@ -82,8 +82,8 @@ def linear_interpolation(trigram_features, lambdas, tri_log_probs, bi_log_probs,
     interpolated_log_probs = {}
 
     for trigram_feature in trigram_features:
-        bigram_feature = trigram_feature // len(uni_log_probs)
-        unigram_feature = bigram_feature // len(uni_log_probs) - 1
+        bigram_feature = trigram_feature % len(uni_log_probs)
+        unigram_feature = bigram_feature % len(uni_log_probs) - 1
         
         trigram_log_prob = tri_log_probs[trigram_feature]
         bigram_log_prob = bi_log_probs[bigram_feature]
