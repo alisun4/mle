@@ -32,13 +32,19 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
         for feature_vect in features:
             if args_feature == "trigram":
                 total_count += 1
-                first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                try:
+                    first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                except KeyError:
+                    first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
                 # # print(first_bigram_prob)
                 log_prob_sum -= first_bigram_prob
             # # print(feature_vect)
             for feature in feature_vect:
                 # # print(log_probs[feature])
-                log_prob_sum -= log_probs[feature]
+                try:
+                    log_prob_sum -= log_probs[feature]
+                except KeyError:
+                    log_prob_sum -= feat_extractor.zero_prob(feature)
             total_count += len(feature_vect)
             # # print()
         # # print(log_prob_sum)
@@ -59,6 +65,8 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
         return "inf"
 
     return np.exp(-(log_prob_sum)/(np.sum(features)))
+
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -104,11 +112,11 @@ def main():
     else:
         train_log_probs = feat_extractor.token_log_probs(train_features)
     
-    test_features = get_features(f"hdtv.txt", feat_extractor, args.feature)
+    test_features = get_features(f"1b_benchmark.{test}.tokens", feat_extractor, args.feature)
     
     perp = perplexity(test_features, train_log_probs, args.feature, args.smoothing, feat_extractor)
     
-    print(perp)
+    print(f"{args.feature} perplexity for {test}:", perp)
     
     
 

@@ -117,9 +117,14 @@ class BigramFeature(FeatureExtractor):
         self.unigram_counter = np.array([])
         self.not_trained = True
         self.bigrams = defaultdict(self.zero)
+        np.seterr(all="ignore")
         
     def zero(self):
         return 0
+    
+    def zero_prob(self, bigram):
+        word_count = len(self.unigram)
+        return np.log(self.smoothing_alpha) - np.log(self.unigram_counter[bigram//word_count] + word_count*self.smoothing_alpha)
     
     def num_tokens(self):
         return np.sum(self.unigram_counter) - self.unigram_counter[0]
@@ -238,12 +243,24 @@ class TrigramFeature(FeatureExtractor):
         self.bigrams = defaultdict(self.zero)
         self.trigrams = defaultdict(self.zero)
         self.start_probs = {}
+        np.seterr(all="ignore")
         
     def zero(self):
         return 0
     
     def num_tokens(self):
         return np.sum(self.unigram_counter) - self.unigram_counter[0]
+    
+    def zero_prob_bigram(self, bigram):
+        word_count = len(self.unigram)
+        return np.log(self.smoothing_alpha) - np.log(self.unigram_counter[bigram//word_count] + word_count*self.smoothing_alpha)
+    
+    def zero_prob(self, trigram):
+        word_count = len(self.unigram)
+        try:
+            return np.log(self.smoothing_alpha) - np.log(self.bigram_count(self.extract_bigram_index(trigram)) + word_count*self.smoothing_alpha)
+        except KeyError:
+            return -np.inf
     
     def bigram_count(self, ind = None):
         if ind == None:
