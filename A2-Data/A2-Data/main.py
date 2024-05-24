@@ -81,20 +81,25 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
     
     interpolated_log_probs = {}
 
-    for trigram_feature in trigram_features:
-        bigram_feature = trigram_feature % len(uni_log_probs)
-        unigram_feature = bigram_feature % len(uni_log_probs) - 1
+    for trigram_feature_list in trigram_features:
+        for trigram_feature in trigram_feature_list:
+            bigram_feature = trigram_feature % len(uni_log_probs)
+            unigram_feature = bigram_feature % len(uni_log_probs) - 1
+            
+            trigram_log_prob = tri_log_probs[trigram_feature]
+            try:
+                bigram_log_prob = bi_log_probs[bigram_feature]
+            except(KeyError):
+                bigram_log_prob = 0
+            try:
+                unigram_log_prob = uni_log_probs[unigram_feature]
+            except(KeyError):
+                unigram_log_prob = 0
+            
+            interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
+            interpolated_log_probs[trigram_feature] = interpolated_prob
         
-        # TO-DO: trigram_feature is a list of numbers and can't be used as a index/key
-        print(trigram_feature)
-        trigram_log_prob = tri_log_probs[trigram_feature]
-        bigram_log_prob = bi_log_probs[bigram_feature]
-        unigram_log_prob = uni_log_probs[unigram_feature]
-        
-        interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
-        interpolated_log_probs[trigram_feature] = interpolated_prob
-        
-    print(interpolated_log_probs)
+    print(list(interpolated_log_probs)[:5])
     return interpolated_log_probs
 
 def main():
