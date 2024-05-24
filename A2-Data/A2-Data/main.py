@@ -41,7 +41,10 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
         for feature_vect in features:
             if args_feature == "trigram":
                 total_count += 1
-                first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                try:
+                    first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                except(KeyError):
+                    first_bigram_prob = 0
                 # # print(first_bigram_prob)
                 log_prob_sum -= first_bigram_prob
             # # print(feature_vect)
