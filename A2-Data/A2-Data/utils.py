@@ -214,7 +214,7 @@ class BigramFeature(FeatureExtractor):
         probabilities = {}
         word_count = len(self.unigram)
         # print(self.unigram_counter)
-        for feature_vect in features:
+        for feature_vect in tqdm(features):
             for index in feature_vect:
                 if index != -1 and index not in probabilities:
                     bigram_count = self.bigram_count(index)
@@ -350,7 +350,7 @@ class TrigramFeature(FeatureExtractor):
         # # print(self.trigrams)
         # # print(self.bigrams)
         # # print(features)
-        for feature_vect in features:
+        for feature_vect in tqdm(features):
             for index in feature_vect:
                 if index != -1 and index not in probabilities:
                     trigram_count = self.trigram_count(index)

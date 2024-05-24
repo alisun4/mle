@@ -81,10 +81,11 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
 
 def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs, tri_log_probs):
     # assert (sum(lambdas) == 1, "Weights must sum to 1")
+    print(f'\tInterpolating with lambdas: {lambdas}')
     
     interpolated_log_probs = {}
 
-    for trigram_feature_list in trigram_features:
+    for trigram_feature_list in tqdm(trigram_features):
         for trigram_feature in trigram_feature_list:
             bigram_feature = trigram_feature % len(uni_log_probs)
             unigram_feature = bigram_feature % len(uni_log_probs) - 1
@@ -102,7 +103,7 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
         
-    print(list(interpolated_log_probs)[:5])
+    print("\tInterpolated trigram log prob samples:\n\t", list(interpolated_log_probs.values())[:5])
     return interpolated_log_probs
 
 def main():
