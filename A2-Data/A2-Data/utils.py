@@ -46,15 +46,29 @@ class UnigramFeature(FeatureExtractor):
     def __init__(self, smoothing_alpha):
         self.unigram = {}
         self.smoothing_alpha = smoothing_alpha
-        self.num_tokens = 0
+        self.not_trained = True
         
     def zero(self):
         return 0
     
+    def num_tokens(self):
+        return np.sum(self.unigram_counter) - self.unigram_counter[0]
     
-    def two(self):
-        return 2
+    def bigram_count(self, ind = None):
+        if ind == None:
+            return sum(self.bigrams.values())
+        else:
+            return self.bigrams[ind]
+    
+    
+    def index(self, token):
+        if token in self.unigram:
+            return self.unigram[token]
         
+        return self.unigram["<UNK>"]
+
+    def bigram_index(self, token1, token2):
+        return self.index(token1)*len(self.unigram) + self.index(token2)
         
     def fit(self, text_set: list):
         """Fit a feature extractor based on given data 
@@ -62,9 +76,10 @@ class UnigramFeature(FeatureExtractor):
         Arguments:
             text_set {list} -- list of tokenized sentences and words are lowercased, such as [["I", "love", "nlp"], ["I", "like", "python"]]
         """
-        self.unigram["<STOP>"] = 0
-        self.unigram["<UNK>"] = 1
-        index = 2
+        self.unigram["<START>"] = 0
+        self.unigram["<STOP>"] = 1
+        self.unigram["<UNK>"] = 2
+        index = 3
         count = defaultdict(self.zero)
         for i in range(0, len(text_set)):
             for j in range(0, len(text_set[i])):
@@ -74,7 +89,8 @@ class UnigramFeature(FeatureExtractor):
                     index += 1
                 else:
                     continue
-              
+        
+        self.unigram_counter = np.zeros(len(self.unigram))
                     
     def transform(self, text: list):
         """Transform a given sentence into vectors based on the extractor you got from self.fit()
@@ -85,28 +101,53 @@ class UnigramFeature(FeatureExtractor):
         Returns:
             array -- an unigram feature array, such as array([1,1,1,0,0,0])
         """
-        feature = np.zeros(len(self.unigram))
-        feature[0] += 1
-        for i in range(0, len(text)):
-            if text[i] in self.unigram:
-                feature[self.unigram[text[i]]] += 1
-            else:
-                feature[1] += 1
+        copied_text = text[:]
+        word_count = len(self.unigram)
+        copied_text.append("<STOP>")
         
-        self.num_tokens = np.sum(feature)
+        feature = []
 
-        return feature
+        for i in range(0, len(copied_text)):
+            unigram_index = self.index(copied_text[i])
+            
+            if self.not_trained:
+                self.unigram_counter[unigram_index] += 1
 
+            feature.append(unigram_index)
+            
 
-    def token_log_probs(self, features, smoothing = True):
-        # # print(features.shape)
-
-
-        prob = np.log(np.sum(features, axis = 0) + self.smoothing_alpha) - np.log((np.sum(features)) + self.smoothing_alpha * ((features.shape[1])+1))
+        return np.array(feature)
+    
+    def transform_list(self, text_set):
+        features = []
+        for i in range(0, len(text_set)):
+            features.append(self.transform(text_set[i]))
         
-        prob[np.isinf(prob)] = np.sum(features) * features.shape[0] * features.shape[1]
+        return np.array(features)
+    
+    def token_log_probs(self, features, smoothing = False):
+        # # print("I like cheese.")
+        # print(self.bigram_count(self.bigram_index("<START>", "HDTV")))
 
-        return prob
+        # print(self.bigram_count(self.bigram_index("HDTV", ".")))
+
+        # print(self.bigram_count(self.bigram_index(".", "<STOP>")))
+
+        # print(self.unigram_counter[self.index(".")])
+
+        probabilities = {}
+        word_count = len(self.unigram)
+        token_count = self.num_tokens()
+        # print(self.unigram_counter)
+        for feature_vect in features:
+            for index in feature_vect:
+                if index != -1 and index not in probabilities:
+                    unigram_count = self.unigram_counter[index]
+                    # # print(unigram_count)
+                    probabilities[index] = np.log(unigram_count) - np.log(token_count + word_count*self.smoothing_alpha)
+        
+
+        return probabilities
 
 class BigramFeature(FeatureExtractor):
     """Example code for unigram feature extraction
