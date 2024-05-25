@@ -298,8 +298,8 @@ class TrigramFeature(FeatureExtractor):
         word_count = len(self.unigram)
         bigram_count = self.bigram_count(self.extract_bigram_index(trigram))
         try:
-            if self.smoothing_alpha == 0:
-                return np.log(self.trigram_count(trigram)) - np.log(bigram_count)
+            # if self.smoothing_alpha == 0:
+            #     return np.log(self.trigram_count(trigram)) - np.log(bigram_count)
             return np.log(self.smoothing_alpha) - np.log(bigram_count + word_count*self.smoothing_alpha)
         except KeyError:
             return -np.inf

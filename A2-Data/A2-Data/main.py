@@ -25,8 +25,7 @@ def get_features(filename, feat_extractor, args_feature):
         features.append(feature_vect)
         # i += 1
 
-    if args_feature == "bigram":
-        feat_extractor.not_trained = False
+    feat_extractor.not_trained = False
     
     # # print(features[:5])
 
@@ -36,9 +35,13 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
 
     log_prob_sum = 0
     total_count = 0
+    print(len(features))
     for feature_vect in features:
-        if args_feature == "trigram":
+        print(len(feature_vect))
+        if args_feature == "trigram" or args_feature == "interpolate":
             total_count += 1
+            
+        if args_feature == "trigram":
             try:
                 first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
             except(KeyError):
@@ -47,11 +50,14 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
             log_prob_sum -= first_bigram_prob
         # # print(feature_vect)
         for feature in feature_vect:
-            # # print(log_probs[feature])
             try:
+                # print(log_probs[feature])
                 log_prob_sum -= log_probs[feature]
             except(KeyError):
-                log_prob_sum -= feat_extractor.zero_prob(feature)
+                if args_feature == "interpolate":
+                    log_prob_sum -= -np.inf
+                else:
+                    log_prob_sum -= feat_extractor.zero_prob(feature)
             
                 
                 
@@ -63,16 +69,18 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
     return np.exp(log_prob_sum/total_count)
 
 
-def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs, tri_log_probs):
+def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs, tri_log_probs, type_count):
     # assert (sum(lambdas) == 1, "Weights must sum to 1")
     print(f'\tInterpolating with lambdas: {lambdas}')
+    
+    i = 1
     
     interpolated_log_probs = {}
 
     for trigram_feature_list in tqdm(trigram_features):
         for trigram_feature in trigram_feature_list:
-            bigram_feature = trigram_feature % (len(uni_log_probs)**2)
-            unigram_feature = bigram_feature % len(uni_log_probs)
+            bigram_feature = trigram_feature % (type_count**2)
+            unigram_feature = bigram_feature % type_count
             
             trigram_log_prob = tri_log_probs[trigram_feature]
             try:
@@ -84,11 +92,17 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             except(KeyError):
                 unigram_log_prob = -np.inf
             
+            # if i == 39721:
+                # print(bigram_feature)
+                # print(unigram_log_prob, bigram_log_prob, trigram_log_prob)
+            
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
+        
+        i += 1
     
     # Filter out -inf values
-    interpolated_log_probs = {k: v for k, v in interpolated_log_probs.items() if v != -np.inf}
+    # interpolated_log_probs = {k: v for k, v in interpolated_log_probs.items() if v != -np.inf}
     
     return interpolated_log_probs
 
@@ -123,6 +137,8 @@ def main():
         bi_feat_extractor.fit(train_data)
         tri_feat_extractor.fit(train_data)
         
+        type_count = len(uni_feat_extractor.unigram)
+        
         uni_features = get_features(f"1b_benchmark.{train}.tokens", uni_feat_extractor, "unigram")
         bi_features = get_features(f"1b_benchmark.{train}.tokens", bi_feat_extractor, "bigram")
         tri_features = get_features(f"1b_benchmark.{train}.tokens", tri_feat_extractor, "trigram")
@@ -131,8 +147,14 @@ def main():
         bi_log_probs = bi_feat_extractor.token_log_probs(bi_features)
         tri_log_probs = tri_feat_extractor.token_log_probs(tri_features)
         
-        interpolated_log_probs = linear_interpolation(tri_features, [0.1, 0.3, 0.6], uni_log_probs, bi_log_probs, tri_log_probs)
-        perp = perplexity(tri_features, interpolated_log_probs, "trigram", args.smoothing, tri_feat_extractor)
+        # print(bi_feat_extractor.bigram_index(".", "<STOP>"))
+        # print(bi_log_probs[bi_feat_extractor.bigram_index(".", "<STOP>")])
+        
+        interpolated_log_probs = linear_interpolation(tri_features, [0.1, 0.3, 0.6], uni_log_probs, bi_log_probs, tri_log_probs, type_count)
+        
+        test_tri_features = get_features(test_data, tri_feat_extractor, "trigram")
+        
+        perp = perplexity(test_tri_features, interpolated_log_probs, "interpolate", args.smoothing)
         print("Interpolated Trigram Perplexity: ", perp)
         
     else:  
