@@ -35,20 +35,18 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
 
     log_prob_sum = 0
     total_count = 0
-    print(len(features))
+    # print(len(features))
     for feature_vect in features:
-        print(len(feature_vect))
+        # print(len(feature_vect))
         if args_feature == "trigram" or args_feature == "interpolate":
             total_count += 1
-            
-        if args_feature == "trigram":
             try:
                 first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
             except(KeyError):
                 first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
             # # print(first_bigram_prob)
             log_prob_sum -= first_bigram_prob
-        # # print(feature_vect)
+        # print(feature_vect)
         for feature in feature_vect:
             try:
                 # print(log_probs[feature])
@@ -92,9 +90,9 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             except(KeyError):
                 unigram_log_prob = -np.inf
             
-            # if i == 39721:
+            if i == 39721:
                 # print(bigram_feature)
-                # print(unigram_log_prob, bigram_log_prob, trigram_log_prob)
+                print(unigram_log_prob, bigram_log_prob, trigram_log_prob)
             
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
@@ -154,7 +152,7 @@ def main():
         
         test_tri_features = get_features(test_data, tri_feat_extractor, "trigram")
         
-        perp = perplexity(test_tri_features, interpolated_log_probs, "interpolate", args.smoothing)
+        perp = perplexity(test_tri_features, interpolated_log_probs, "interpolate", args.smoothing, tri_feat_extractor)
         print("Interpolated Trigram Perplexity: ", perp)
         
     else:  
