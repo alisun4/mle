@@ -86,8 +86,10 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
-        
-    print("\tInterpolated trigram log prob samples:\n", [val for val in list(interpolated_log_probs.values()) if val != float('-inf')][:24])
+    
+    # Filter out -inf values
+    interpolated_log_probs = {k: v for k, v in interpolated_log_probs.items() if v != -np.inf}
+    
     return interpolated_log_probs
 
 def main():
@@ -116,11 +118,11 @@ def main():
         
     # Poor way to handle "this or that", but it works
     if args.feature == "interpolate":
-        # uni_feat_extractor.fit(train_data)
+        uni_feat_extractor.fit(train_data)
         bi_feat_extractor.fit(train_data)
         tri_feat_extractor.fit(train_data)
         
-        # uni_features = get_features(f"1b_benchmark.{train}.tokens", uni_feat_extractor, "unigram")
+        uni_features = get_features(f"1b_benchmark.{train}.tokens", uni_feat_extractor, "unigram")
         bi_features = get_features(f"1b_benchmark.{train}.tokens", bi_feat_extractor, "bigram")
         tri_features = get_features(f"1b_benchmark.{train}.tokens", tri_feat_extractor, "trigram")
         
@@ -128,11 +130,13 @@ def main():
         # bi_feat_extractor.transform(bi_features)
         # tri_feat_extractor.transform(tri_features)
         
-        # uni_log_probs = uni_feat_extractor.token_log_probs(uni_features)
+        uni_log_probs = uni_feat_extractor.token_log_probs(uni_features)
         bi_log_probs = bi_feat_extractor.token_log_probs(bi_features)
         tri_log_probs = tri_feat_extractor.token_log_probs(tri_features)
         
-        linear_interpolation(tri_features, [0.1, 0.3, 0.6], bi_log_probs, bi_log_probs, tri_log_probs)
+        interpolated_log_probs = linear_interpolation(tri_features, [0.1, 0.3, 0.6], uni_log_probs, bi_log_probs, tri_log_probs)
+        perp = perplexity(tri_features, interpolated_log_probs, "trigram", args.smoothing, tri_feat_extractor)
+        print("Perplexity: ", perp)
         
     else:  
         feat_extractor.fit(train_data)

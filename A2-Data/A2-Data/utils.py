@@ -296,8 +296,11 @@ class TrigramFeature(FeatureExtractor):
     
     def zero_prob(self, trigram):
         word_count = len(self.unigram)
+        bigram_count = self.bigram_count(self.extract_bigram_index(trigram))
         try:
-            return np.log(self.smoothing_alpha) - np.log(self.bigram_count(self.extract_bigram_index(trigram)) + word_count*self.smoothing_alpha)
+            if self.smoothing_alpha == 0:
+                return np.log(self.trigram_count(trigram)) - np.log(bigram_count)
+            return np.log(self.smoothing_alpha) - np.log(bigram_count + word_count*self.smoothing_alpha)
         except KeyError:
             return -np.inf
     
