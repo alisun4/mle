@@ -42,7 +42,7 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
             try:
                 first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
             except(KeyError):
-                first_bigram_prob = 0
+                first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
             # # print(first_bigram_prob)
             log_prob_sum -= first_bigram_prob
         # # print(feature_vect)
@@ -51,7 +51,7 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
             try:
                 log_prob_sum -= log_probs[feature]
             except(KeyError):
-                pass
+                log_prob_sum -= feat_extractor.zero_prob(feature)
             
                 
                 
@@ -78,16 +78,16 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             try:
                 bigram_log_prob = bi_log_probs[bigram_feature]
             except(KeyError):
-                bigram_log_prob = 0
+                bigram_log_prob = -np.inf
             try:
                 unigram_log_prob = uni_log_probs[unigram_feature]
             except(KeyError):
-                unigram_log_prob = 0
+                unigram_log_prob = -np.inf
             
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
         
-    print("\tInterpolated trigram log prob samples:\n\t", list(interpolated_log_probs.values())[:5])
+    print("\tInterpolated trigram log prob samples:\n", [val for val in list(interpolated_log_probs.values()) if val != float('-inf')][:24])
     return interpolated_log_probs
 
 def main():
