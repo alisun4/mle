@@ -29,54 +29,38 @@ def get_features(filename, feat_extractor, args_feature):
         feat_extractor.not_trained = False
     
     # # print(features[:5])
-    if args_feature == "bigram" or args_feature == "trigram":
-        return features
-    
-    return np.array(features)
+
+    return features
 
 def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None):
-    if args_feature != "unigram":
-        log_prob_sum = 0
-        total_count = 0
-        for feature_vect in features:
-            if args_feature == "trigram":
-                total_count += 1
-                try:
-                    first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
-                except(KeyError):
-                    first_bigram_prob = 0
-                # # print(first_bigram_prob)
-                log_prob_sum -= first_bigram_prob
-            # # print(feature_vect)
-            for feature in feature_vect:
-                # # print(log_probs[feature])
-                try:
-                    log_prob_sum -= log_probs[feature]
-                except(KeyError):
-                    pass
+
+    log_prob_sum = 0
+    total_count = 0
+    for feature_vect in features:
+        if args_feature == "trigram":
+            total_count += 1
+            try:
+                first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+            except(KeyError):
+                first_bigram_prob = 0
+            # # print(first_bigram_prob)
+            log_prob_sum -= first_bigram_prob
+        # # print(feature_vect)
+        for feature in feature_vect:
+            # # print(log_probs[feature])
+            try:
+                log_prob_sum -= log_probs[feature]
+            except(KeyError):
+                pass
+            
                 
-                    
-                    
-            total_count += len(feature_vect)
-            # # print()
-        # # print(log_prob_sum)
-        # # print(total_count)
-        # # print(log_prob_sum/total_count)
-        return np.exp(log_prob_sum/total_count)
-    
-    # # print(features)
-    # # print(np.dot(features, log_probs))
-    # # print(np.sum(features))
-    # # print(features.shape)
-
-    # # print(s_log_prob)
-
-    log_prob_sum = np.sum(np.dot(features, log_probs))
-
-    if log_prob_sum > 0:
-        return "inf"
-
-    return np.exp(-(log_prob_sum)/(np.sum(features)))
+                
+        total_count += len(feature_vect)
+        # # print()
+    # # print(log_prob_sum)
+    # # print(total_count)
+    # # print(log_prob_sum/total_count)
+    return np.exp(log_prob_sum/total_count)
 
 
 def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs, tri_log_probs):
@@ -87,8 +71,8 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
 
     for trigram_feature_list in tqdm(trigram_features):
         for trigram_feature in trigram_feature_list:
-            bigram_feature = trigram_feature % len(uni_log_probs)
-            unigram_feature = bigram_feature % len(uni_log_probs) - 1
+            bigram_feature = trigram_feature % (len(uni_log_probs)*len(uni_log_probs))
+            unigram_feature = bigram_feature % len(uni_log_probs)
             
             trigram_log_prob = tri_log_probs[trigram_feature]
             try:
