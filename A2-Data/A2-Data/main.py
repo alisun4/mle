@@ -71,7 +71,7 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
 
     for trigram_feature_list in tqdm(trigram_features):
         for trigram_feature in trigram_feature_list:
-            bigram_feature = trigram_feature % (len(uni_log_probs)*len(uni_log_probs))
+            bigram_feature = trigram_feature % (len(uni_log_probs)**2)
             unigram_feature = bigram_feature % len(uni_log_probs)
             
             trigram_log_prob = tri_log_probs[trigram_feature]
@@ -94,8 +94,9 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
 
 def main():
     train_data = []
-    # test_data = 'hdtv.txt'
-    test_data = '1b_benchmark.dev.tokens'
+    test_data = 'hdtv.txt'
+    # test_data = '1b_benchmark.dev.tokens'
+    print(test_data)
     args = init_arg_parser()
     train, text = ("tiny", "tiny") if (args.debug) else ("train", args.test)
     
@@ -126,17 +127,13 @@ def main():
         bi_features = get_features(f"1b_benchmark.{train}.tokens", bi_feat_extractor, "bigram")
         tri_features = get_features(f"1b_benchmark.{train}.tokens", tri_feat_extractor, "trigram")
         
-        # uni_feat_extractor.transform(train_features)
-        # bi_feat_extractor.transform(bi_features)
-        # tri_feat_extractor.transform(tri_features)
-        
         uni_log_probs = uni_feat_extractor.token_log_probs(uni_features)
         bi_log_probs = bi_feat_extractor.token_log_probs(bi_features)
         tri_log_probs = tri_feat_extractor.token_log_probs(tri_features)
         
         interpolated_log_probs = linear_interpolation(tri_features, [0.1, 0.3, 0.6], uni_log_probs, bi_log_probs, tri_log_probs)
         perp = perplexity(tri_features, interpolated_log_probs, "trigram", args.smoothing, tri_feat_extractor)
-        print("Perplexity: ", perp)
+        print("Interpolated Trigram Perplexity: ", perp)
         
     else:  
         feat_extractor.fit(train_data)
