@@ -26,7 +26,7 @@ The script accepts the following command line arguments:
 
 `--interpolate` or `-i`: This argument is a boolean flag used to turn on or off the interpolation. The default value is False.
 
-Usage
+# Usage
 Here is an example of how to use these arguments:
 ```
 python main.py --feature bigram --smoothing 0.1 --debug True --test test --interpolate True
