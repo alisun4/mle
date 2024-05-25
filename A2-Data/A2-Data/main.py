@@ -31,7 +31,7 @@ def get_features(filename, feat_extractor, args_feature):
 
     return features
 
-def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None):
+def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = None, uni_log_probs = None):
 
     log_prob_sum = 0
     total_count = 0
@@ -40,10 +40,19 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
         # print(len(feature_vect))
         if args_feature == "trigram" or args_feature == "interpolate":
             total_count += 1
-            try:
-                first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
-            except(KeyError):
-                first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
+            if args_feature == "trigram":
+                try:
+                    first_bigram_prob = feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                except(KeyError):
+                    first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
+            else:
+                try:
+                    bigram_feature = feat_extractor.extract_bigram_index(feature_vect[0])
+                    unigram_feature = bigram_feature % len(feat_extractor.unigram)
+                    first_bigram_prob = (0)*uni_log_probs[unigram_feature] + (1)*feat_extractor.start_probs[feat_extractor.extract_bigram_index(feature_vect[0])]
+                    # print(first_bigram_prob)
+                except(KeyError):
+                    first_bigram_prob = feat_extractor.zero_prob_bigram(feat_extractor.extract_bigram_index(feature_vect[0]))
             # # print(first_bigram_prob)
             log_prob_sum -= first_bigram_prob
         # print(feature_vect)
@@ -62,7 +71,7 @@ def perplexity(features, log_probs, args_feature, smoothing, feat_extractor = No
         total_count += len(feature_vect)
         # # print()
     # # print(log_prob_sum)
-    # # print(total_count)
+    print(total_count)
     # # print(log_prob_sum/total_count)
     return np.exp(log_prob_sum/total_count)
 
@@ -90,9 +99,9 @@ def linear_interpolation(trigram_features, lambdas, uni_log_probs, bi_log_probs,
             except(KeyError):
                 unigram_log_prob = -np.inf
             
-            if i == 39721:
-                # print(bigram_feature)
-                print(unigram_log_prob, bigram_log_prob, trigram_log_prob)
+            # if i == 39721:
+            #     print(bigram_feature)
+            #     print(unigram_log_prob, bigram_log_prob, trigram_log_prob)
             
             interpolated_prob = unigram_log_prob*lambdas[0] + bigram_log_prob*lambdas[1] + trigram_log_prob*lambdas[2]
             interpolated_log_probs[trigram_feature] = interpolated_prob
@@ -152,7 +161,7 @@ def main():
         
         test_tri_features = get_features(test_data, tri_feat_extractor, "trigram")
         
-        perp = perplexity(test_tri_features, interpolated_log_probs, "interpolate", args.smoothing, tri_feat_extractor)
+        perp = perplexity(test_tri_features, interpolated_log_probs, "interpolate", args.smoothing, tri_feat_extractor, uni_log_probs=uni_log_probs)
         print("Interpolated Trigram Perplexity: ", perp)
         
     else:  
