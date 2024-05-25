@@ -29,5 +29,5 @@ The script accepts the following command line arguments:
 # Usage
 Here is an example of how to use these arguments:
 ```
-python main.py --feature bigram --smoothing 0.1 --debug True --test test --interpolate True
+python main.py --feature interpolate --smoothing -0
 ```
